@@ -1,6 +1,18 @@
 Requisitos necesarios para probar el proyecto:
-tener react instalado para node.js
-Tener cuenta de: 
-Dockerhub, SonarCloud y SnyK.
 
+-Tener cuenta de: 
+-Dockerhub, SonarCloud y SnyK.
+-Tener visual studio code
+Tener Github.
+
+GITHUB:
+-Crear secretos que tengan token de acceso para: Dockerhub, SonarCloud y SnyK
+ y crear secreto para usuario de dockerhub
+
+Otros:
+-Revisar que el puerto a usar para la base de datos este disponible
+
+COMANDOS PARA EJECUCIÓN:
+
+docker ps -a
 
