@@ -1,56 +1,53 @@
-name: Node.js CI/CD Pipeline
 
+name: ci
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
+    branches:
+      - 'main'
+env:
+  DOCKERHUB_USERNAME: saperezrdocker
+  DOCKERHUB_REPO: devops
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout Repositorio
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18.x'
-        cache: 'npm'
+      - name: Setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Install dependencies
-      run: npm install
+      - name: Instalar dependencias
+        run : npm install --force
 
-    - name: Run tests
-      run: npm test
+      - name: Eslint
+        run : npx eslint -c .eslintrc.json src --fix --max-warnings=0
 
-    - name: Run ESLint
-      run: npx eslint . || echo "ESLint not configured"
+      - name: Test 
+        run : |
+         export CHROME_BIN=$(which google-chrome-stable)
+         npm test -- --watchAll=false --ci --browsers=ChromeHeadless
 
-  docker-build-push:
-    runs-on: ubuntu-latest
-    needs: test
-    
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Snyk
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+        
+      - name: Scan sonar source
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Login DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: saperezrdocker/node-app:latest
+      - name: Docker build y push
+        run : |
+          docker build -t $DOCKERHUB_USERNAME/$DOCKERHUB_REPO:latest .
+          docker push $DOCKERHUB_USERNAME/$DOCKERHUB_REPO:latest
